@@ -22,8 +22,7 @@ Ensure you have **Python 3.7+** installed and **SQLite3** configured.
 
 ### 1️⃣ Clone the Repository
 ```sh
- git clone https://github.com/your-repository/sqlite-chat-assistant.git
- cd sqlite-chat-assistant
+ git clone https://github.com/HarshTikone/ChatbotAjackus.git
 ```
 
 ### 2️⃣ Create a Virtual Environment (Optional but Recommended)
