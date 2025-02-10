@@ -1,10 +1,12 @@
-import streamlit as st
+from flask import Flask, render_template, request
 import sqlite3
 import re
 import pandas as pd
 
+app = Flask(__name__)
+
 def create_connection():
-    return sqlite3.connect("company.db")
+    return sqlite3.connect("company.db", check_same_thread=False)
 
 def execute_query(query, params=()):
     with create_connection() as conn:
@@ -34,36 +36,30 @@ def process_query(user_query):
     
     if "employees in" in user_query and department:
         result = execute_query("SELECT Name FROM Employees WHERE Department = ?", (department,))
-        return pd.DataFrame(result, columns=["Employees"]) if result else "No employees found in this department."
+        return [row[0] for row in result] if result else ["No employees found in this department."]
     
     if "manager of" in user_query and department:
         result = execute_query("SELECT Manager FROM Departments WHERE Name = ?", (department,))
-        return f"Manager: {result[0][0]}" if result else "No manager found for this department."
+        return [f"Manager: {result[0][0]}"] if result else ["No manager found for this department."]
     
     if "hired after" in user_query and date:
         result = execute_query("SELECT Name FROM Employees WHERE Hire_Date > ?", (date,))
-        return pd.DataFrame(result, columns=["Employees"]) if result else "No employees found hired after this date."
+        return [row[0] for row in result] if result else ["No employees found hired after this date."]
     
     if "total salary expense for" in user_query and department:
         result = execute_query("SELECT SUM(Salary) FROM Employees WHERE Department = ?", (department,))
-        return f"Total Salary Expense: {result[0][0]}" if result[0][0] else "No salary data found."
+        return [f"Total Salary Expense: {result[0][0]}"] if result[0][0] else ["No salary data found."]
     
-    return "I couldn't understand the query. Try asking differently."
+    return ["I couldn't understand the query. Try asking differently."]
 
-# Streamlit UI
-st.set_page_config(page_title="SQLite Chat Assistant", page_icon="💬", layout="centered")
-st.title("💬 SQLite Chat Assistant")
-st.write("Ask questions about employees and departments!")
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    response = []
+    if request.method == 'POST':
+        user_input = request.form.get('query')
+        if user_input:
+            response = process_query(user_input)
+    return render_template('index.html', response=response)
 
-user_input = st.text_input("Enter your query:")
-
-if st.button("Submit"):
-    if user_input:
-        response = process_query(user_input)
-        st.subheader("Response:")
-        if isinstance(response, pd.DataFrame):
-            st.dataframe(response)
-        else:
-            st.write(response)
-    else:
-        st.warning("Please enter a query.")
+if __name__ == '__main__':
+    app.run(debug=True)
